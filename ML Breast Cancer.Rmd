@@ -57,26 +57,305 @@ summary(training)
 
 - Class distribution
 ```{r}
-
+cbind(freq = table(training$Class), percentage = prop.table(table(training$Class))*100)
 ```
 
-# b) Data visualizations
+- Checking Correlation
+```{r}
+completeCases <- complete.cases(training)
+cor(training[completeCases, 1:9])
+```
 
-# 3. Prepare Data
-# a) Data Cleaning
-# b) Feature Selection
-# c) Data Transforms
+
+# b) Data visualizations
+- Attribute distbrution
+```{r}
+par(mfrow = c(3,3))
+for(i in 1:9){
+        hist(training[,i], main = names(training)[i], xlab = names(training)[i])
+}
+```
+- Density Plots
+```{r}
+par(mfrow = c(3,3))
+completeCases <- complete.cases(training)
+for(i in 1:9){
+        plot(density(training[completeCases,i]), 
+             main = names(training)[i], xlab = names(training)[i])
+}
+```
+- Box and Whisker
+```{r}
+par(mfrow = c(3,3))
+for(i in 1:9){
+        boxplot(training[,i], main = names(training)[i], xlab = names(training))
+}
+```
+
+- Scatter Plot to examine interaction between attributes
+```{r}
+jittered_x <- sapply(training[,1:9], jitter)
+pairs(jittered_x, names(training[,1:9]), col = training$Class)
+```
+- Bar plot
+```{r}
+par(mfrow = c(3,3))
+for(i in 1:9){
+        barplot(table(training$Class, training[,i]), 
+                main = names(training)[i], xlab = names(training)[i],
+                legend.text = unique(training$Class),
+                args.legend = list(x ='topright', bty='n', inset=c(-0.25,-.20)))
+}
+```
 
 # 4. Evaluate Algorithms
 # a) Test options and evaluation metric
-# b) Spot-Check Algorithms
+```{r}
+fitControl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+metric <- "Accuracy"
+seed <- set.seed(11)
+```
+
 # c) Compare Algorithms
+```{r}
+#Logistic Regression
+set.seed(seed)
+fitLG <- train(Class~., data = training,
+               method = "glm", metric = metric,
+               trControl = fitControl, na.action = na.omit)
+#Linear Discriminant Analysis
+set.seed(seed)
+fitLDA <- train(Class~., data = training,
+                method = "lda", metric = metric,
+                trControl = fitControl, na.action = na.omit)
+#Regularized Logistic Regression
+set.seed(seed)
+fitGLMNET <- train(Class~., data = training,
+                   method = "glmnet", metric = metric,
+                   trControl = fitControl, na.action = na.omit)
+#K Nearest Neighbors
+set.seed(seed)
+fitKNN <- train(Class~., data = training,
+                method = "knn", metric = metric,
+                trControl = fitControl, na.action = na.omit)
+#Classification and Regression Trees
+set.seed(seed)
+fitCART <- train(Class~., data = training,
+                 method = "rpart", metric = metric,
+                 trControl = fitControl, na.action = na.omit)
+#Naive Bayes
+set.seed(seed)
+fitNB <- train(Class~., data = training,
+               method = "nb", metric = metric,
+               trControl = fitControl, na.action = na.omit)
+#Support Vector Machines with Radial Basis Function
+set.seed(seed)
+fitSVM <- train(Class~., data = training,
+                method = "nb", metric = metric,
+                trControl = fitControl, na.action = na.omit)
+
+results <- resamples(list(LG = fitLG,
+                          LDA = fitLDA,
+                          GLMNET = fitGLMNET,
+                          KNN = fitKNN,
+                          CART = fitCART,
+                          NB = fitNB,
+                          SVM = fitSVM))
+summary(results)
+
+```
+```{r}
+scales <- list(x=list(relation = "free"), y = list(relation = "free"))
+dotplot(results, scales = scales)
+```
+
+- Evaluating the algorithms with transformed data
+```{r}
+#Logistic Regression
+set.seed(seed)
+fitLG <- train(Class~., data = training,
+               method = "glm", metric = metric,
+               preProc = c("BoxCox"),
+               trControl = fitControl, na.action = na.omit)
+#Linear Discriminant Analysis
+set.seed(seed)
+fitLDA <- train(Class~., data = training,
+                method = "lda", metric = metric,
+                preProc = c("BoxCox"),
+                trControl = fitControl, na.action = na.omit)
+#Regularized Logistic Regression
+set.seed(seed)
+fitGLMNET <- train(Class~., data = training,
+                   method = "glmnet", metric = metric,
+                   preProc = c("BoxCox"),
+                   trControl = fitControl, na.action = na.omit)
+#K Nearest Neighbors
+set.seed(seed)
+fitKNN <- train(Class~., data = training,
+                method = "knn", metric = metric,
+                preProc = c("BoxCox"),
+                trControl = fitControl, na.action = na.omit)
+#Classification and Regression Trees
+set.seed(seed)
+fitCART <- train(Class~., data = training,
+                 method = "rpart", metric = metric,
+                 preProc = c("BoxCox"),
+                 trControl = fitControl, na.action = na.omit)
+#Naive Bayes
+set.seed(seed)
+fitNB <- train(Class~., data = training,
+               method = "nb", metric = metric,
+               preProc = c("BoxCox"),
+               trControl = fitControl, na.action = na.omit)
+#Support Vector Machines with Radial Basis Function
+set.seed(seed)
+fitSVM <- train(Class~., data = training,
+                method = "svmRadial", metric = metric,
+                preProc = c("BoxCox"),
+                trControl = fitControl, na.action = na.omit)
+
+transformResults <- resamples(list(LG = fitLG,
+                                   LDA = fitLDA,
+                                   GLMNET = fitGLMNET,
+                                   KNN = fitKNN,
+                                   CART = fitCART,
+                                   NB = fitNB,
+                                   SVM = fitSVM))
+summary(transformResults)
+
+```
+
+```{r}
+dotplot(transformResults, scales = scales)
+```
 
 # 5. Improve Accuracy
 # a) Algorithm Tuning
+
+- Tuning GLMNET
+```{r}
+fitGLMNET
+```
+
+```{r}
+fitControl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+metric <- "Accuracy"
+grid <- expand.grid(.alpha = seq(.05, .15, by = .01),
+                    .lambda = c(0.0008189388, 0.0081893883, 0.0818938833))
+set.seed(seed)
+tuneGLMNET <- train(Class~., data = training,
+                    method = "glmnet", metric = metric,
+                    tuneGrid = grid, preProc = c("BoxCox"),
+                    trControl = fitControl, na.action = na.omit)
+tuneGLMNET
+```
+```{r}
+plot(tuneGLMNET)
+```
+
+- Tuning KNN
+
+```{r}
+fitKNN
+```
+```{r}
+grid <- expand.grid(.k = seq(3, 15, by=1))
+set.seed(seed)
+tuneKNN <- train(Class~., data = training,
+                 method = "knn", metric = metric,
+                 tuneGrid = grid, preProc = c("BoxCox"),
+                 trControl = fitControl, na.action = na.omit)
+tuneKNN
+```
+```{r}
+plot(tuneKNN)
+```
+
+- Tuning SVM
+```{r}
+fitSVM
+```
+```{r}
+grid <- expand.grid(.sigma = c(0.025, 0.05, 0.1, 0.15),
+                    .C = seq(1, 10, by = 1))
+set.seed(seed)
+tuneSVM <- train(Class~., data = training, 
+                 method = "svmRadial", metric = metric,
+                 tuneGrid = grid, preProc = c("BoxCox"),
+                 trControl = fitControl, na.action = na.omit)
+tuneSVM
+```
+```{r}
+plot(tuneSVM)
+```
+
+
 # b) Ensembles
+- Bagged CART, Random Forest, Stochastic Gradient Boosting, C5.0
+```{r}
+#Bagged CART
+set.seed(seed)
+fitTREEBAG <- train(Class~., data = training, 
+                    method = "treebag", metric = metric,
+                    prePRoc = c("BoxCox"),
+                    trControl = fitControl, na.action = na.omit)
+#Random Forest
+set.seed(seed)
+fitRF <- train(Class~., data = training,
+               method = "rf", metric = metric,
+               preProc = c("BoxCox"),
+               trControl = fitControl, na.action = na.omit)
+#Stachastic Gradient Boosting
+set.seed(seed)
+fitGBM <- train(Class~., data = training,
+                method = "gbm", metric = metric,
+                preProc = c("BoxCox"),
+                trControl = fitControl, verbose = FALSE, na.action = na.omit)
+#C5.0
+set.seed(seed)
+fitC5.0 <- train(Class~., data = training,
+                method = "C5.0", metric = metric,
+                preProc = c("BoxCox"),
+                trControl = fitControl, na.action = na.omit)
+
+ensembleResults <- resamples(list(TREEBAG = fitTREEBAG,
+                                  RF = fitRF,
+                                  GBM = fitGBM,
+                                  C5.0 = fitC5.0))
+dotplot(ensembleResults)
+```
+
+```{r}
+summary(ensembleResults)
+```
+
 
 # 6. Finalize Model
+
+```{r}
+set.seed(seed)
+noMissingData <- training[complete.cases(training),]
+x <- noMissingData[,1:9]
+preprocessParams <- preProcess(x, method=c("BoxCox"))
+x <- predict(preprocessParams, x)
+```
+
+```{r}
+set.seed(seed)
+testing <- testing[,-1]
+testing <- testing[complete.cases(testing),]
+for(i in 1:9){
+        testing[,i] <- as.numeric(as.character(testing[,i]))
+}
+testX <- predict(preprocessParams, testing[,1:9])
+```
+
+```{r}
+set.seed(7)
+predictions <- knn3Train(x, testX, noMissingData$Class, k = 9, prob = FALSE)
+confusionMatrix(predictions, testing$Class)
+```
+
 # a) Predictions on validation dataset
 # b) Create standalone model on entire training dataset
 # c) Save model for later use
