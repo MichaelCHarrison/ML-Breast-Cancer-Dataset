@@ -1,0 +1,82 @@
+---
+title: "ML Wisconsin Breast Cancer Dataset"
+author: "Michael Harrison"
+date: "May 1, 2017"
+output: html_document
+---
+
+
+# 1. Prepare Problem
+# a) Load packages
+```{r}
+library(mlbench)
+library(caret)
+```
+
+# b) Load dataset
+```{r}
+data("BreastCancer")
+```
+
+# c) Split-out validation dataset
+```{r}
+inTrain <- createDataPartition(BreastCancer$Class, p = 0.8, list=FALSE)
+training <- BreastCancer[inTrain,]
+testing <- BreastCancer[-inTrain,]
+```
+
+# 2. Summarize Data
+# a) Descriptive statistics
+- Training set dimensions
+```{r}
+dim(training)
+```
+- Head of dataset
+```{r}
+head(training, 10)
+```
+
+- Checking classes of attributes
+```{r}
+sapply(training, class)
+```
+- 
+```{r}
+#Remove ID attribute
+training <- training[,-1]
+#Convert input values to numeric
+for(i in 1:9){
+        training[,i] <- as.numeric(as.character(training[,i]))
+}
+```
+
+- Summary of data
+```{r}
+summary(training)
+```
+
+- Class distribution
+```{r}
+
+```
+
+# b) Data visualizations
+
+# 3. Prepare Data
+# a) Data Cleaning
+# b) Feature Selection
+# c) Data Transforms
+
+# 4. Evaluate Algorithms
+# a) Test options and evaluation metric
+# b) Spot-Check Algorithms
+# c) Compare Algorithms
+
+# 5. Improve Accuracy
+# a) Algorithm Tuning
+# b) Ensembles
+
+# 6. Finalize Model
+# a) Predictions on validation dataset
+# b) Create standalone model on entire training dataset
+# c) Save model for later use
